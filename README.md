@@ -32,24 +32,11 @@ The project ships with a local heuristic LLM fallback, so the full request path 
 
 ## Architecture
 
-```text
-Client / Head Unit
-       |
-       | REST / SSE
-       v
-FastAPI Gateway
-       |
-       | auth, signature, routing
-       v
-ReAct Executor
-       |
-       +-- LLM Client
-       +-- Tool Registry
-       +-- Context Manager
-              |
-              +-- Session history
-              +-- Summary compression
-```
+<p align="center">
+  <img src="assets/architecture.png" alt="Cockpit Agent architecture" width="960">
+</p>
+
+The runtime is organized around a FastAPI gateway, a ReAct executor, a schema-driven tool registry, streaming model adapters, and a context manager that keeps long conversations compact.
 
 ## Quick Start
 
