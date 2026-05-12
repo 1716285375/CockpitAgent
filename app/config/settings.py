@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     tool_timeout_seconds: float = Field(default=5.0, ge=0.1)
     context_max_tokens: int = Field(default=3000, ge=200)
     context_keep_recent: int = Field(default=4, ge=1)
+    context_ttl_seconds: int = Field(default=86400, ge=60)
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

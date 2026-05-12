@@ -3,6 +3,7 @@ from functools import lru_cache
 from app.agent.executor import ReActExecutor
 from app.config.settings import get_settings
 from app.context.manager import ContextManager
+from app.context.store import RedisContextStore
 from app.llm.client import HeuristicLLMClient, OpenAICompatibleLLMClient
 from app.tools import ToolRegistry, build_default_registry
 
@@ -16,7 +17,15 @@ def get_registry() -> ToolRegistry:
 @lru_cache
 def get_context_manager() -> ContextManager:
     settings = get_settings()
-    return ContextManager(max_tokens=settings.context_max_tokens, keep_recent=settings.context_keep_recent)
+    store = None
+    if settings.redis_url.startswith("redis://") or settings.redis_url.startswith("rediss://"):
+        store = RedisContextStore(settings.redis_url)
+    return ContextManager(
+        max_tokens=settings.context_max_tokens,
+        keep_recent=settings.context_keep_recent,
+        ttl_seconds=settings.context_ttl_seconds,
+        store=store,
+    )
 
 
 @lru_cache
@@ -41,4 +50,3 @@ def get_executor() -> ReActExecutor:
         ctx=get_context_manager(),
         max_steps=settings.agent_max_steps,
     )
-

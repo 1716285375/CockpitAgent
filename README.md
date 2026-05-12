@@ -25,7 +25,7 @@ The project ships with a local heuristic LLM fallback, so the full request path 
 - **SSE streaming**: token and intermediate tool events over `text/event-stream`
 - **Tool registry**: Pydantic schema validation, async dispatch, timeout handling, enable/disable switches
 - **Cockpit tools**: AC, seats, windows, vehicle status, weather, navigation, preferences, vehicle QA, music
-- **Context management**: in-memory sessions with summary compression and recent-message retention
+- **Context management**: memory or Redis-backed sessions with summary compression and recent-message retention
 - **Security hooks**: optional JWT verification and HMAC request signature checks
 - **Model adapter**: OpenAI-compatible streaming client plus local fallback for development and tests
 - **Deployable shape**: Dockerfile, Compose file, docs, and test suite included
@@ -162,7 +162,6 @@ See [docs/tool_development.md](docs/tool_development.md) for details.
 
 ## Roadmap
 
-- Redis-backed session storage
 - MySQL-backed user preference persistence
 - Nacos dynamic configuration adapter
 - WebSocket endpoint
