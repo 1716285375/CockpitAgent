@@ -5,10 +5,20 @@ import time
 
 from fastapi import Depends, Header, HTTPException, Request, status
 
+from app.auth.nonce import MemoryNonceStore, NonceStore, RedisNonceStore
 from app.config.settings import Settings, get_settings
 
 
-_seen_nonces: set[str] = set()
+_memory_nonce_store = MemoryNonceStore()
+_redis_nonce_stores: dict[str, RedisNonceStore] = {}
+
+
+def get_nonce_store(settings: Settings = Depends(get_settings)) -> NonceStore:
+    if settings.redis_url.startswith("redis://") or settings.redis_url.startswith("rediss://"):
+        if settings.redis_url not in _redis_nonce_stores:
+            _redis_nonce_stores[settings.redis_url] = RedisNonceStore(settings.redis_url)
+        return _redis_nonce_stores[settings.redis_url]
+    return _memory_nonce_store
 
 
 async def verify_signature(
@@ -33,8 +43,6 @@ async def verify_signature(
 
     if abs(time.time() - timestamp) > settings.signature_window_seconds:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Signature timestamp expired")
-    if x_nonce in _seen_nonces:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Replay nonce")
 
     body = await request.body()
     body_hash = hashlib.sha256(body).hexdigest()
@@ -44,5 +52,6 @@ async def verify_signature(
     if not hmac.compare_digest(expected, x_signature):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature")
 
-    _seen_nonces.add(x_nonce)
-
+    nonce_store = get_nonce_store(settings)
+    if not await nonce_store.mark_seen(x_nonce, settings.signature_window_seconds):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Replay nonce")
