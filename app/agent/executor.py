@@ -1,0 +1,73 @@
+import json
+from collections.abc import AsyncIterator
+from typing import Any
+
+from app.agent.events import Event
+from app.agent.parser import ParseError, ReActParser
+from app.context.manager import ContextManager
+from app.llm.client import StreamingLLM
+from app.tools.base import ToolError
+from app.tools.registry import ToolRegistry
+
+
+class ReActExecutor:
+    def __init__(
+        self,
+        llm: StreamingLLM,
+        registry: ToolRegistry,
+        ctx: ContextManager,
+        max_steps: int = 6,
+    ):
+        self.llm = llm
+        self.registry = registry
+        self.ctx = ctx
+        self.max_steps = max_steps
+
+    async def run(self, session_id: str, user_input: str, metadata: dict[str, Any] | None = None) -> AsyncIterator[Event]:
+        history = await self.ctx.load(session_id)
+        user_message = {"role": "user", "content": user_input, "metadata": metadata or {}}
+        history.append(user_message)
+
+        for _step in range(self.max_steps):
+            prompt_messages = self._build_messages(history)
+            buffer = ""
+            async for token in self.llm.stream(prompt_messages):
+                buffer += token
+                yield Event(type="thinking", data={"token": token})
+
+            try:
+                parsed = ReActParser.parse(buffer)
+            except ParseError as exc:
+                history.append({"role": "assistant", "content": buffer})
+                history.append({"role": "tool", "content": f"ParserError: {exc}"})
+                continue
+
+            if parsed.is_final:
+                answer = parsed.answer or ""
+                yield Event(type="final", data={"token": answer})
+                await self.ctx.save(session_id, [*history, {"role": "assistant", "content": answer}])
+                return
+
+            yield Event(type="tool_start", data={"tool": parsed.action, "args": parsed.args or {}})
+            try:
+                observation = await self.registry.invoke(parsed.action or "", parsed.args or {})
+            except ToolError as exc:
+                observation = {"status": "error", "error": str(exc)}
+
+            yield Event(type="tool_end", data={"tool": parsed.action, "result": observation})
+            history.append({"role": "assistant", "content": buffer})
+            history.append({"role": "tool", "name": parsed.action, "content": json.dumps(observation, ensure_ascii=False)})
+
+        fallback = "抱歉, 任务步骤过多或模型输出无法解析, 请分步描述。"
+        yield Event(type="final", data={"token": fallback})
+        await self.ctx.save(session_id, [*history, {"role": "assistant", "content": fallback}])
+
+    def _build_messages(self, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        tools = json.dumps(self.registry.list_schemas(), ensure_ascii=False)
+        system = (
+            "你是智能座舱语音助手 Agent, 可以通过工具完成车辆控制、信息查询、导航、偏好和媒体任务。"
+            "输出必须遵循 ReAct: Thought/Action/Action Input 或 Final Answer。"
+            f"可用工具 JSON Schema: {tools}"
+        )
+        return [{"role": "system", "content": system}, *history]
+

@@ -1,0 +1,30 @@
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
+from app.auth.jwt_handler import verify_jwt
+from app.dependencies import get_registry
+from app.tools.registry import ToolRegistry
+
+
+router = APIRouter(prefix="/v1/admin", tags=["admin"])
+
+
+class ToolToggleRequest(BaseModel):
+    enabled: bool
+
+
+@router.get("/tools")
+async def list_tools(_user: dict = Depends(verify_jwt), registry: ToolRegistry = Depends(get_registry)) -> dict:
+    return {"tools": registry.list_tools()}
+
+
+@router.patch("/tools/{tool_name}")
+async def toggle_tool(
+    tool_name: str,
+    req: ToolToggleRequest,
+    _user: dict = Depends(verify_jwt),
+    registry: ToolRegistry = Depends(get_registry),
+) -> dict:
+    registry.set_enabled(tool_name, req.enabled)
+    return {"status": "ok", "tool": tool_name, "enabled": req.enabled}
+

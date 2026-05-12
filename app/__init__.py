@@ -1,0 +1,2 @@
+"""Cockpit Agent application package."""
+
