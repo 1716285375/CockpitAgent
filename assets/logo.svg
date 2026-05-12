@@ -1,0 +1,43 @@
+<svg width="720" height="240" viewBox="0 0 720 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Cockpit Agent Logo</title>
+  <desc id="desc">A stylized vehicle cockpit and conversational agent mark.</desc>
+  <defs>
+    <linearGradient id="panel" x1="74" y1="38" x2="263" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="108" y1="64" x2="216" y2="176" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A7F3D0"/>
+      <stop offset="1" stop-color="#BFDBFE"/>
+    </linearGradient>
+    <filter id="shadow" x="28" y="18" width="252" height="220" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#0F172A" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <rect width="720" height="240" rx="32" fill="#F8FAFC"/>
+  <g filter="url(#shadow)">
+    <rect x="54" y="38" width="196" height="164" rx="36" fill="url(#panel)"/>
+    <path d="M92 133C102 96 124 78 158 78C192 78 214 96 224 133" stroke="url(#glow)" stroke-width="12" stroke-linecap="round"/>
+    <path d="M92 136H224" stroke="#ECFEFF" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="116" cy="161" r="14" fill="#E0F2FE"/>
+    <circle cx="200" cy="161" r="14" fill="#E0F2FE"/>
+    <path d="M144 151H172" stroke="#E0F2FE" stroke-width="8" stroke-linecap="round"/>
+    <path d="M132 103H184" stroke="#CCFBF1" stroke-width="7" stroke-linecap="round"/>
+    <path d="M152 55V36M152 204V185M69 120H48M256 120H235" stroke="#0F766E" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <text x="304" y="101" fill="#0F172A" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="44" font-weight="800">Cockpit Agent</text>
+  <text x="306" y="139" fill="#334155" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="19" font-weight="500">ReAct-powered intelligent cockpit assistant</text>
+  <g fill="#0F766E" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">
+    <text x="306" y="178">SSE</text>
+    <text x="366" y="178">Tools</text>
+    <text x="446" y="178">Context</text>
+    <text x="548" y="178">FastAPI</text>
+  </g>
+  <g stroke="#CBD5E1" stroke-width="2" stroke-linecap="round">
+    <path d="M350 173H336"/>
+    <path d="M430 173H416"/>
+    <path d="M532 173H518"/>
+  </g>
+</svg>
