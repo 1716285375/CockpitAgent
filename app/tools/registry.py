@@ -7,13 +7,20 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from app.infra.audit import AuditSink, build_audit_event
 from app.tools.base import BaseTool, ToolError
 
 
 class ToolRegistry:
-    def __init__(self, timeout_seconds: float = 5.0, cache_ttl_seconds: float = 10.0):
+    def __init__(
+        self,
+        timeout_seconds: float = 5.0,
+        cache_ttl_seconds: float = 10.0,
+        audit_sink: AuditSink | None = None,
+    ):
         self.timeout_seconds = timeout_seconds
         self.cache_ttl_seconds = cache_ttl_seconds
+        self.audit_sink = audit_sink
         self._tools: dict[str, BaseTool] = {}
         self._cache: dict[str, tuple[float, dict[str, Any]]] = {}
 
@@ -34,6 +41,7 @@ class ToolRegistry:
             raise ToolError(f"Unknown tool: {name}") from exc
 
     async def invoke(self, name: str, args: dict[str, Any] | None = None) -> dict[str, Any]:
+        started_at = time.perf_counter()
         tool = self.get(name)
         if not tool.enabled:
             raise ToolError(f"Tool {name} is disabled")
@@ -47,6 +55,7 @@ class ToolRegistry:
         if tool.cacheable:
             cached = self._read_cache(cache_key)
             if cached is not None:
+                await self._record_audit(name, "cache_hit", started_at, validated.model_dump())
                 return cached
 
         try:
@@ -55,9 +64,14 @@ class ToolRegistry:
                 timeout=self.timeout_seconds,
             )
         except TimeoutError as exc:
+            await self._record_audit(name, "timeout", started_at, validated.model_dump())
             raise ToolError(f"Tool {name} timeout") from exc
+        except Exception:
+            await self._record_audit(name, "error", started_at, validated.model_dump())
+            raise
         if tool.cacheable:
             self._write_cache(cache_key, result)
+        await self._record_audit(name, "success", started_at, validated.model_dump())
         return deepcopy(result)
 
     def list_schemas(self) -> list[dict[str, Any]]:
@@ -102,3 +116,15 @@ class ToolRegistry:
     @staticmethod
     def _cache_key(name: str, args: dict[str, Any]) -> str:
         return f"{name}:{json.dumps(args, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"
+
+    async def _record_audit(self, tool_name: str, status: str, started_at: float, args: dict[str, Any]) -> None:
+        if self.audit_sink is None:
+            return
+        await self.audit_sink.record(
+            build_audit_event(
+                event_type="tool_invocation",
+                status=status,
+                started_at=started_at,
+                metadata={"tool": tool_name, "args": args},
+            )
+        )

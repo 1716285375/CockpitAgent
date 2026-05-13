@@ -1,4 +1,5 @@
 from app.tools.registry import ToolRegistry
+from app.infra.audit import AuditSink
 from app.tools.vehicle.ac_control import ACControlTool
 from app.tools.vehicle.seat_control import SeatControlTool
 from app.tools.vehicle.window_control import WindowControlTool
@@ -14,8 +15,13 @@ def build_default_registry(
     timeout_seconds: float = 5.0,
     cache_ttl_seconds: float = 10.0,
     preference_store: PreferenceStore | None = None,
+    audit_sink: AuditSink | None = None,
 ) -> ToolRegistry:
-    registry = ToolRegistry(timeout_seconds=timeout_seconds, cache_ttl_seconds=cache_ttl_seconds)
+    registry = ToolRegistry(
+        timeout_seconds=timeout_seconds,
+        cache_ttl_seconds=cache_ttl_seconds,
+        audit_sink=audit_sink,
+    )
     preference_store = preference_store or MemoryPreferenceStore()
     registry.register_many(
         [
