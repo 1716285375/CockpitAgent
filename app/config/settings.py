@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     rate_limit_requests: int = Field(default=60, ge=1)
     rate_limit_window_seconds: int = Field(default=60, ge=1)
 
+    chat_max_message_chars: int = Field(default=2000, ge=1)
+
     agent_max_steps: int = Field(default=6, ge=1, le=20)
     tool_timeout_seconds: float = Field(default=5.0, ge=0.1)
     tool_cache_ttl_seconds: float = Field(default=10.0, ge=0.0)

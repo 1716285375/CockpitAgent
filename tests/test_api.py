@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.config.settings import get_settings
 from app.main import app
 
 
@@ -74,3 +75,15 @@ def test_admin_tool_schemas():
 
     assert response.status_code == 200
     assert response.json()["tools"][0]["type"] == "function"
+
+
+def test_chat_rejects_too_long_message():
+    client = TestClient(app)
+    settings = get_settings()
+
+    response = client.post(
+        "/v1/chat/stream",
+        json={"session_id": "long-message", "message": "x" * (settings.chat_max_message_chars + 1)},
+    )
+
+    assert response.status_code == 413

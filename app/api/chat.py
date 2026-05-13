@@ -45,6 +45,12 @@ async def chat_stream(
     rate_limiter: RateLimiter = Depends(get_rate_limiter),
     settings: Settings = Depends(get_settings),
 ):
+    if len(req.message) > settings.chat_max_message_chars:
+        raise HTTPException(
+            status_code=413,
+            detail="Message is too long",
+        )
+
     if settings.rate_limit_enabled:
         key = f"chat:{user.get('sub') or req.user_id}"
         limit = await rate_limiter.check(key, settings.rate_limit_requests, settings.rate_limit_window_seconds)
@@ -92,6 +98,11 @@ async def chat_websocket(
     except Exception:
         await websocket.send_json({"event": "error", "data": {"message": "Invalid websocket payload"}})
         await websocket.close(code=1003)
+        return
+
+    if len(req.message) > settings.chat_max_message_chars:
+        await websocket.send_json({"event": "error", "data": {"message": "Message is too long"}})
+        await websocket.close(code=1009)
         return
 
     if settings.rate_limit_enabled:
