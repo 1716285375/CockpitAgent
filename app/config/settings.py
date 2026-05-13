@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     redis_url: str = "memory://"
     mysql_dsn: str = ""
 
+    nacos_server: str = ""
+    nacos_namespace: str = ""
+    nacos_group: str = "DEFAULT_GROUP"
+    nacos_data_id: str = "cockpit-agent"
+    nacos_poll_interval_seconds: float = Field(default=5.0, ge=1.0)
+
     jwt_secret: str = ""
     jwt_expire_hours: int = 24
     auth_enabled: bool = False
@@ -42,3 +48,12 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def safe_settings(settings: Settings | None = None) -> dict:
+    settings = settings or get_settings()
+    data = settings.model_dump()
+    for key in ("llm_api_key", "jwt_secret", "hmac_secret", "mysql_dsn"):
+        if data.get(key):
+            data[key] = "***"
+    return data

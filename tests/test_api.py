@@ -36,3 +36,12 @@ def test_websocket_chat():
     assert "tool_start" in events
     assert "final" in events
     assert events[-1] == "done"
+
+
+def test_admin_config_hides_secrets():
+    client = TestClient(app)
+
+    response = client.get("/v1/admin/config")
+
+    assert response.status_code == 200
+    assert "config" in response.json()

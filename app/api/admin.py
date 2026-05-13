@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.auth.jwt_handler import verify_jwt
+from app.config.settings import Settings, get_settings, safe_settings
 from app.dependencies import get_registry
 from app.tools.registry import ToolRegistry
 
@@ -28,3 +29,7 @@ async def toggle_tool(
     registry.set_enabled(tool_name, req.enabled)
     return {"status": "ok", "tool": tool_name, "enabled": req.enabled}
 
+
+@router.get("/config")
+async def get_config(_user: dict = Depends(verify_jwt), settings: Settings = Depends(get_settings)) -> dict:
+    return {"config": safe_settings(settings)}
