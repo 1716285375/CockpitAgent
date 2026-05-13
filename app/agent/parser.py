@@ -48,7 +48,25 @@ class ReActParser:
         thought = thought_match.group("thought").strip() if thought_match else None
         return ParsedOutput(thought=thought, action=action_match.group("action"), args=args)
 
+    @classmethod
+    def parse_message(cls, message: dict[str, Any]) -> ParsedOutput:
+        tool_calls = message.get("tool_calls") or []
+        if tool_calls:
+            first_call = tool_calls[0]
+            function = first_call.get("function", {})
+            name = function.get("name")
+            raw_args = function.get("arguments") or "{}"
+            if not name:
+                raise ParseError("Missing function name in tool call")
+            try:
+                args = json.loads(raw_args) if isinstance(raw_args, str) else dict(raw_args)
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise ParseError(f"Invalid function arguments JSON: {exc}") from exc
+            return ParsedOutput(action=name, args=args)
+
+        content = str(message.get("content") or "")
+        return cls.parse(content)
+
     @staticmethod
     def _strip_code_fences(text: str) -> str:
         return re.sub(r"```(?:json|text)?\s*|\s*```", "", text.strip(), flags=re.IGNORECASE)
-
