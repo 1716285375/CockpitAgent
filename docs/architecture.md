@@ -11,3 +11,4 @@
 
 Redis、MySQL、Nacos 预留在配置层，当前默认使用内存实现保证本地可运行。
 
+Docker Compose can start Redis, MySQL, and Nacos for an integrated local environment. MySQL schema initialization lives in `docker/mysql/init.sql`.

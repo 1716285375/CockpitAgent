@@ -7,5 +7,40 @@ services:
       - "8000:8000"
     env_file:
       - ../.env
+    depends_on:
+      - redis
+      - mysql
+      - nacos
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: cockpit
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cockpit}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    ports:
+      - "8848:8848"
+    environment:
+      MODE: standalone
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  mysql_data:

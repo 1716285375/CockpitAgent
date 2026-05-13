@@ -153,6 +153,8 @@ Run with Docker:
 docker compose -f docker/docker-compose.yml up --build
 ```
 
+The compose stack includes the API service, Redis, MySQL, and Nacos. MySQL is initialized with the preference and audit tables from `docker/mysql/init.sql`.
+
 ## Tool Development
 
 Create a new tool by extending `BaseTool`, defining a Pydantic `args_schema`, implementing `execute`, and registering it in `build_default_registry`.
