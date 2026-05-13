@@ -41,3 +41,9 @@
 `GET /v1/admin/audit/events?limit=50`
 
 返回最近的工具调用审计事件，包含工具名、状态和耗时。
+
+## Tool Schemas
+
+`GET /v1/admin/tools/schemas?format=openai`
+
+返回 OpenAI-compatible tool schema；`format=react` 返回 ReAct prompt 使用的简化 schema。

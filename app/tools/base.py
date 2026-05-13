@@ -26,6 +26,9 @@ class BaseTool(ABC):
             "parameters": self.args_schema.model_json_schema(),
         }
 
+    def openai_tool_schema(self) -> dict[str, Any]:
+        return {"type": "function", "function": self.schema()}
+
     @abstractmethod
     async def execute(self, **kwargs: Any) -> dict[str, Any]:
         raise NotImplementedError

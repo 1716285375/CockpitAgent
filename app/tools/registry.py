@@ -77,6 +77,9 @@ class ToolRegistry:
     def list_schemas(self) -> list[dict[str, Any]]:
         return [tool.schema() for tool in self._tools.values() if tool.enabled]
 
+    def list_openai_tools(self) -> list[dict[str, Any]]:
+        return [tool.openai_tool_schema() for tool in self._tools.values() if tool.enabled]
+
     def list_tools(self) -> list[dict[str, Any]]:
         return [
             {"name": tool.name, "description": tool.description, "enabled": tool.enabled}

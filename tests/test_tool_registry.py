@@ -75,3 +75,14 @@ def test_tool_registry_cache_can_be_disabled():
 
     assert first["calls"] == 1
     assert second["calls"] == 2
+
+
+def test_tool_registry_exports_openai_tool_schemas():
+    registry = build_default_registry()
+
+    schemas = registry.list_openai_tools()
+
+    assert schemas
+    assert schemas[0]["type"] == "function"
+    assert "name" in schemas[0]["function"]
+    assert "parameters" in schemas[0]["function"]

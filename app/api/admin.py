@@ -20,6 +20,19 @@ async def list_tools(_user: dict = Depends(verify_jwt), registry: ToolRegistry =
     return {"tools": registry.list_tools()}
 
 
+@router.get("/tools/schemas")
+async def list_tool_schemas(
+    format: str = "openai",
+    _user: dict = Depends(verify_jwt),
+    registry: ToolRegistry = Depends(get_registry),
+) -> dict:
+    if format == "react":
+        return {"tools": registry.list_schemas()}
+    if format == "openai":
+        return {"tools": registry.list_openai_tools()}
+    return {"tools": registry.list_tools()}
+
+
 @router.patch("/tools/{tool_name}")
 async def toggle_tool(
     tool_name: str,

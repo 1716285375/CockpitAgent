@@ -55,3 +55,12 @@ def test_admin_audit_events():
 
     assert response.status_code == 200
     assert "events" in response.json()
+
+
+def test_admin_tool_schemas():
+    client = TestClient(app)
+
+    response = client.get("/v1/admin/tools/schemas")
+
+    assert response.status_code == 200
+    assert response.json()["tools"][0]["type"] == "function"

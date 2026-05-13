@@ -117,6 +117,7 @@ Send one JSON message after connecting, using the same fields as the streaming c
 ### Admin
 
 - `GET /v1/admin/tools`
+- `GET /v1/admin/tools/schemas`
 - `PATCH /v1/admin/tools/{tool_name}`
 - `GET /v1/admin/audit/events`
 
