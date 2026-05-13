@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from app.agent.executor import ReActExecutor
+from app.auth.rate_limit import MemoryRateLimiter, RateLimiter, RedisRateLimiter
 from app.config.settings import get_settings
 from app.context.manager import ContextManager
 from app.context.session_lock import MemorySessionLock, RedisSessionLock, SessionLock
@@ -49,6 +50,14 @@ def get_session_lock() -> SessionLock:
     if settings.redis_url.startswith("redis://") or settings.redis_url.startswith("rediss://"):
         return RedisSessionLock(settings.redis_url)
     return MemorySessionLock()
+
+
+@lru_cache
+def get_rate_limiter() -> RateLimiter:
+    settings = get_settings()
+    if settings.redis_url.startswith("redis://") or settings.redis_url.startswith("rediss://"):
+        return RedisRateLimiter(settings.redis_url)
+    return MemoryRateLimiter()
 
 
 @lru_cache

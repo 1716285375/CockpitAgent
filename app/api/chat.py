@@ -7,10 +7,11 @@ from pydantic import BaseModel, Field
 
 from app.agent.executor import ReActExecutor
 from app.auth.jwt_handler import verify_jwt
+from app.auth.rate_limit import RateLimiter
 from app.auth.signature import verify_signature
 from app.config.settings import Settings, get_settings
 from app.context.session_lock import SessionLock
-from app.dependencies import get_executor, get_session_lock
+from app.dependencies import get_executor, get_rate_limiter, get_session_lock
 
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
@@ -41,8 +42,19 @@ async def chat_stream(
     user: dict = Depends(verify_jwt),
     executor: ReActExecutor = Depends(get_executor),
     session_lock: SessionLock = Depends(get_session_lock),
+    rate_limiter: RateLimiter = Depends(get_rate_limiter),
     settings: Settings = Depends(get_settings),
 ):
+    if settings.rate_limit_enabled:
+        key = f"chat:{user.get('sub') or req.user_id}"
+        limit = await rate_limiter.check(key, settings.rate_limit_requests, settings.rate_limit_window_seconds)
+        if not limit.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit exceeded",
+                headers={"Retry-After": str(limit.reset_seconds)},
+            )
+
     acquired = await session_lock.acquire(req.session_id, settings.session_lock_ttl_seconds)
     if not acquired:
         raise HTTPException(
@@ -70,6 +82,7 @@ async def chat_websocket(
     websocket: WebSocket,
     executor: ReActExecutor = Depends(get_executor),
     session_lock: SessionLock = Depends(get_session_lock),
+    rate_limiter: RateLimiter = Depends(get_rate_limiter),
     settings: Settings = Depends(get_settings),
 ):
     await websocket.accept()
@@ -80,6 +93,22 @@ async def chat_websocket(
         await websocket.send_json({"event": "error", "data": {"message": "Invalid websocket payload"}})
         await websocket.close(code=1003)
         return
+
+    if settings.rate_limit_enabled:
+        limit = await rate_limiter.check(
+            f"chat:{req.user_id}",
+            settings.rate_limit_requests,
+            settings.rate_limit_window_seconds,
+        )
+        if not limit.allowed:
+            await websocket.send_json(
+                {
+                    "event": "error",
+                    "data": {"message": "Rate limit exceeded", "retry_after": limit.reset_seconds},
+                }
+            )
+            await websocket.close(code=1013)
+            return
 
     acquired = await session_lock.acquire(req.session_id, settings.session_lock_ttl_seconds)
     if not acquired:
