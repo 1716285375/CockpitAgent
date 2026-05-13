@@ -45,3 +45,12 @@ def test_admin_config_hides_secrets():
 
     assert response.status_code == 200
     assert "config" in response.json()
+
+
+def test_admin_audit_events():
+    client = TestClient(app)
+
+    response = client.get("/v1/admin/audit/events")
+
+    assert response.status_code == 200
+    assert "events" in response.json()

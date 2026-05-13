@@ -118,6 +118,7 @@ Send one JSON message after connecting, using the same fields as the streaming c
 
 - `GET /v1/admin/tools`
 - `PATCH /v1/admin/tools/{tool_name}`
+- `GET /v1/admin/audit/events`
 
 ## Project Structure
 
