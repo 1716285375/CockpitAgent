@@ -6,13 +6,17 @@ from app.tools.info.navigation import NavigationTool
 from app.tools.info.vehicle_status import VehicleStatusTool
 from app.tools.info.weather import WeatherTool
 from app.tools.media import PlayMusicTool
-from app.tools.preference.user_preference import GetUserPreferenceTool, PreferenceStore, SetUserPreferenceTool
+from app.tools.preference.user_preference import GetUserPreferenceTool, MemoryPreferenceStore, PreferenceStore, SetUserPreferenceTool
 from app.tools.qa import VehicleQATool
 
 
-def build_default_registry(timeout_seconds: float = 5.0, cache_ttl_seconds: float = 10.0) -> ToolRegistry:
+def build_default_registry(
+    timeout_seconds: float = 5.0,
+    cache_ttl_seconds: float = 10.0,
+    preference_store: PreferenceStore | None = None,
+) -> ToolRegistry:
     registry = ToolRegistry(timeout_seconds=timeout_seconds, cache_ttl_seconds=cache_ttl_seconds)
-    preference_store = PreferenceStore()
+    preference_store = preference_store or MemoryPreferenceStore()
     registry.register_many(
         [
             ACControlTool(),

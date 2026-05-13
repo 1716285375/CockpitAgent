@@ -44,9 +44,10 @@ class ToolRegistry:
             raise ToolError(f"Args validation failed: {exc}") from exc
 
         cache_key = self._cache_key(name, validated.model_dump())
-        cached = self._read_cache(cache_key)
-        if cached is not None:
-            return cached
+        if tool.cacheable:
+            cached = self._read_cache(cache_key)
+            if cached is not None:
+                return cached
 
         try:
             result = await asyncio.wait_for(
@@ -55,7 +56,8 @@ class ToolRegistry:
             )
         except TimeoutError as exc:
             raise ToolError(f"Tool {name} timeout") from exc
-        self._write_cache(cache_key, result)
+        if tool.cacheable:
+            self._write_cache(cache_key, result)
         return deepcopy(result)
 
     def list_schemas(self) -> list[dict[str, Any]]:

@@ -8,14 +8,17 @@ from app.context.store import RedisContextStore
 from app.llm.client import HeuristicLLMClient, OpenAICompatibleLLMClient
 from app.llm.retry import CircuitBreaker
 from app.tools import ToolRegistry, build_default_registry
+from app.tools.preference.user_preference import MemoryPreferenceStore, MySQLPreferenceStore
 
 
 @lru_cache
 def get_registry() -> ToolRegistry:
     settings = get_settings()
+    preference_store = MySQLPreferenceStore(settings.mysql_dsn) if settings.mysql_dsn else MemoryPreferenceStore()
     return build_default_registry(
         timeout_seconds=settings.tool_timeout_seconds,
         cache_ttl_seconds=settings.tool_cache_ttl_seconds,
+        preference_store=preference_store,
     )
 
 

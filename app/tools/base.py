@@ -17,6 +17,7 @@ class BaseTool(ABC):
     description: str
     args_schema: type[BaseModel] = EmptyArgs
     enabled: bool = True
+    cacheable: bool = True
 
     def schema(self) -> dict[str, Any]:
         return {
@@ -28,4 +29,3 @@ class BaseTool(ABC):
     @abstractmethod
     async def execute(self, **kwargs: Any) -> dict[str, Any]:
         raise NotImplementedError
-
