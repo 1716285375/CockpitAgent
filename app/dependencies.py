@@ -8,7 +8,7 @@ from app.context.session_lock import MemorySessionLock, RedisSessionLock, Sessio
 from app.context.store import RedisContextStore
 from app.llm.client import HeuristicLLMClient, OpenAICompatibleLLMClient
 from app.llm.retry import CircuitBreaker
-from app.infra.audit import MemoryAuditSink
+from app.infra.audit import AuditSink, MemoryAuditSink, MySQLAuditSink
 from app.tools import ToolRegistry, build_default_registry
 from app.tools.preference.user_preference import MemoryPreferenceStore, MySQLPreferenceStore
 
@@ -26,7 +26,10 @@ def get_registry() -> ToolRegistry:
 
 
 @lru_cache
-def get_audit_sink() -> MemoryAuditSink:
+def get_audit_sink() -> AuditSink:
+    settings = get_settings()
+    if settings.mysql_dsn:
+        return MySQLAuditSink(settings.mysql_dsn)
     return MemoryAuditSink()
 
 

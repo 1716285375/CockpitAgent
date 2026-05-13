@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from app.auth.jwt_handler import verify_jwt
 from app.config.settings import Settings, get_settings, safe_settings
 from app.dependencies import get_audit_sink, get_registry
-from app.infra.audit import MemoryAuditSink
+from app.infra.audit import AuditSink, MemoryAuditSink
 from app.tools.registry import ToolRegistry
 
 
@@ -53,8 +53,10 @@ async def get_config(_user: dict = Depends(verify_jwt), settings: Settings = Dep
 async def list_audit_events(
     limit: int = 50,
     _user: dict = Depends(verify_jwt),
-    audit_sink: MemoryAuditSink = Depends(get_audit_sink),
+    audit_sink: AuditSink = Depends(get_audit_sink),
 ) -> dict:
+    if not isinstance(audit_sink, MemoryAuditSink):
+        return {"events": [], "message": "Audit events are stored in the configured database"}
     events = audit_sink.events[-limit:]
     return {
         "events": [

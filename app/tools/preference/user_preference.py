@@ -39,7 +39,7 @@ class MemoryPreferenceStore:
 class MySQLPreferenceStore:
     def __init__(self, dsn: str):
         self.dsn = dsn
-        self.connection_kwargs = self._parse_dsn(dsn)
+        self.connection_kwargs = parse_mysql_dsn(dsn)
 
     async def set(self, user_id: str, key: str, value: str) -> None:
         import aiomysql
@@ -74,19 +74,19 @@ class MySQLPreferenceStore:
         finally:
             conn.close()
 
-    @staticmethod
-    def _parse_dsn(dsn: str) -> dict:
-        parsed = urlparse(dsn)
-        if parsed.scheme not in {"mysql", "mysql+aiomysql"}:
-            raise ValueError("MYSQL_DSN must use mysql:// or mysql+aiomysql://")
-        return {
-            "host": parsed.hostname or "localhost",
-            "port": parsed.port or 3306,
-            "user": parsed.username or "",
-            "password": parsed.password or "",
-            "db": parsed.path.lstrip("/"),
-            "autocommit": False,
-        }
+
+def parse_mysql_dsn(dsn: str) -> dict:
+    parsed = urlparse(dsn)
+    if parsed.scheme not in {"mysql", "mysql+aiomysql"}:
+        raise ValueError("MYSQL_DSN must use mysql:// or mysql+aiomysql://")
+    return {
+        "host": parsed.hostname or "localhost",
+        "port": parsed.port or 3306,
+        "user": parsed.username or "",
+        "password": parsed.password or "",
+        "db": parsed.path.lstrip("/"),
+        "autocommit": False,
+    }
 
 
 class SetUserPreferenceTool(BaseTool):
