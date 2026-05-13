@@ -1,6 +1,7 @@
 import asyncio
 
 from app.agent.executor import ReActExecutor
+from app.agent.prompts import PromptRenderer
 from app.context.manager import ContextManager
 from app.llm.client import HeuristicLLMClient
 from app.tools import build_default_registry
@@ -46,3 +47,17 @@ def test_executor_runs_multiple_tools():
     assert "天气" in events[-2].data["token"]
     assert events[-1].type == "done"
     assert events[-1].data["tool_calls"] == 2
+
+
+def test_executor_builds_messages_from_prompt_template():
+    executor = ReActExecutor(
+        llm=HeuristicLLMClient(),
+        registry=build_default_registry(),
+        ctx=ContextManager(),
+        prompt_renderer=PromptRenderer("Custom tools: {tools}"),
+    )
+
+    messages = executor._build_messages([])
+
+    assert messages[0]["content"].startswith("Custom tools:")
+    assert "ac_control" in messages[0]["content"]

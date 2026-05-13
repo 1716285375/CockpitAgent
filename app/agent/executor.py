@@ -4,6 +4,7 @@ from typing import Any
 
 from app.agent.events import Event
 from app.agent.parser import ParseError, ReActParser
+from app.agent.prompts import PromptRenderer
 from app.context.manager import ContextManager
 from app.llm.client import StreamingLLM
 from app.llm.token_counter import count_tokens
@@ -18,11 +19,13 @@ class ReActExecutor:
         registry: ToolRegistry,
         ctx: ContextManager,
         max_steps: int = 6,
+        prompt_renderer: PromptRenderer | None = None,
     ):
         self.llm = llm
         self.registry = registry
         self.ctx = ctx
         self.max_steps = max_steps
+        self.prompt_renderer = prompt_renderer or PromptRenderer()
 
     async def run(self, session_id: str, user_input: str, metadata: dict[str, Any] | None = None) -> AsyncIterator[Event]:
         history = await self.ctx.load(session_id)
@@ -78,12 +81,7 @@ class ReActExecutor:
         )
 
     def _build_messages(self, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        tools = json.dumps(self.registry.list_schemas(), ensure_ascii=False)
-        system = (
-            "你是智能座舱语音助手 Agent, 可以通过工具完成车辆控制、信息查询、导航、偏好和媒体任务。"
-            "输出必须遵循 ReAct: Thought/Action/Action Input 或 Final Answer。"
-            f"可用工具 JSON Schema: {tools}"
-        )
+        system = self.prompt_renderer.render_system_prompt(self.registry.list_schemas())
         return [{"role": "system", "content": system}, *history]
 
     @staticmethod

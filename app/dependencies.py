@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from app.agent.executor import ReActExecutor
+from app.agent.prompts import PromptRenderer
 from app.auth.rate_limit import MemoryRateLimiter, RateLimiter, RedisRateLimiter
 from app.config.settings import get_settings
 from app.context.manager import ContextManager
@@ -89,4 +90,5 @@ def get_executor() -> ReActExecutor:
         registry=get_registry(),
         ctx=get_context_manager(),
         max_steps=settings.agent_max_steps,
+        prompt_renderer=PromptRenderer.from_file("app/agent/prompts/react.tmpl"),
     )
