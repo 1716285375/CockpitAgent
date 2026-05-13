@@ -4,6 +4,12 @@
 
 `GET /health`
 
+## Readiness
+
+`GET /ready`
+
+返回服务可用状态、工具数量、上下文存储模式和 LLM 模式。
+
 ## Streaming Chat
 
 `POST /v1/chat/stream`

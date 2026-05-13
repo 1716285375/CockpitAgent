@@ -12,6 +12,16 @@ def test_health():
     assert response.json()["status"] == "ok"
 
 
+def test_readiness():
+    client = TestClient(app)
+
+    response = client.get("/ready")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+    assert response.json()["tools"] >= 1
+
+
 def test_create_session():
     client = TestClient(app)
 

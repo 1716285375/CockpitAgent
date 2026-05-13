@@ -49,6 +49,7 @@ Check the service:
 
 ```bash
 curl http://localhost:8000/health
+curl http://localhost:8000/ready
 ```
 
 Try a streaming cockpit request:
