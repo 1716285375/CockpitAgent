@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,13 @@ router = APIRouter(prefix="/v1/chat", tags=["chat"])
 
 
 class ChatRequest(BaseModel):
+    session_id: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    user_id: str = Field(default="anonymous")
+    vehicle_id: str | None = None
+
+
+class ChatWebSocketRequest(BaseModel):
     session_id: str = Field(min_length=1)
     message: str = Field(min_length=1)
     user_id: str = Field(default="anonymous")
@@ -57,3 +64,39 @@ async def chat_stream(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.websocket("/ws")
+async def chat_websocket(
+    websocket: WebSocket,
+    executor: ReActExecutor = Depends(get_executor),
+    session_lock: SessionLock = Depends(get_session_lock),
+    settings: Settings = Depends(get_settings),
+):
+    await websocket.accept()
+    try:
+        payload = await websocket.receive_json()
+        req = ChatWebSocketRequest(**payload)
+    except Exception:
+        await websocket.send_json({"event": "error", "data": {"message": "Invalid websocket payload"}})
+        await websocket.close(code=1003)
+        return
+
+    acquired = await session_lock.acquire(req.session_id, settings.session_lock_ttl_seconds)
+    if not acquired:
+        await websocket.send_json(
+            {"event": "error", "data": {"message": "Session is already processing another request"}}
+        )
+        await websocket.close(code=1013)
+        return
+
+    try:
+        metadata = {"user_id": req.user_id, "vehicle_id": req.vehicle_id, "auth_sub": None}
+        async for event in executor.run(req.session_id, req.message, metadata=metadata):
+            await websocket.send_json({"event": event.type, "data": event.data})
+        await websocket.send_json({"event": "done", "data": {"session_id": req.session_id}})
+    except WebSocketDisconnect:
+        return
+    finally:
+        await session_lock.release(req.session_id)
+        await websocket.close()

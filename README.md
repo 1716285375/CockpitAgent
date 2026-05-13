@@ -102,6 +102,12 @@ SSE events:
 - `final`: assistant answer
 - `done`: stream completed
 
+### WebSocket Chat
+
+`WS /v1/chat/ws`
+
+Send one JSON message after connecting, using the same fields as the streaming chat request. The server returns JSON events with the same event names as SSE.
+
 ### Sessions
 
 - `POST /v1/sessions`
