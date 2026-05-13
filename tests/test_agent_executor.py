@@ -22,8 +22,10 @@ def test_executor_runs_tool_and_returns_final_answer():
 
     assert "tool_start" in event_types
     assert "tool_end" in event_types
-    assert event_types[-1] == "final"
-    assert "空调" in events[-1].data["token"]
+    assert event_types[-2] == "final"
+    assert event_types[-1] == "done"
+    assert "空调" in events[-2].data["token"]
+    assert events[-1].data["tool_calls"] == 1
 
 
 def test_executor_runs_multiple_tools():
@@ -41,4 +43,6 @@ def test_executor_runs_multiple_tools():
     tool_names = [event.data["tool"] for event in events if event.type == "tool_start"]
 
     assert tool_names == ["ac_control", "weather"]
-    assert "天气" in events[-1].data["token"]
+    assert "天气" in events[-2].data["token"]
+    assert events[-1].type == "done"
+    assert events[-1].data["tool_calls"] == 2

@@ -55,7 +55,6 @@ async def chat_stream(
             metadata = {"user_id": req.user_id, "vehicle_id": req.vehicle_id, "auth_sub": user.get("sub")}
             async for event in executor.run(req.session_id, req.message, metadata=metadata):
                 yield encode_sse(event.type, event.data)
-            yield encode_sse("done", {"session_id": req.session_id})
         finally:
             await session_lock.release(req.session_id)
 
@@ -94,7 +93,6 @@ async def chat_websocket(
         metadata = {"user_id": req.user_id, "vehicle_id": req.vehicle_id, "auth_sub": None}
         async for event in executor.run(req.session_id, req.message, metadata=metadata):
             await websocket.send_json({"event": event.type, "data": event.data})
-        await websocket.send_json({"event": "done", "data": {"session_id": req.session_id}})
     except WebSocketDisconnect:
         return
     finally:

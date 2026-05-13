@@ -31,6 +31,7 @@ def test_websocket_chat():
             message = websocket.receive_json()
             events.append(message["event"])
             if message["event"] == "done":
+                assert message["data"]["tool_calls"] == 1
                 break
 
     assert "tool_start" in events
