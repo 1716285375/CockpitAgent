@@ -6,6 +6,8 @@ from typing import Any, Protocol
 
 import httpx
 
+from app.llm.retry import CircuitBreaker, retry_async
+
 
 class StreamingLLM(Protocol):
     async def stream(self, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
@@ -13,15 +15,41 @@ class StreamingLLM(Protocol):
 
 
 class OpenAICompatibleLLMClient:
-    def __init__(self, base_url: str, api_key: str, model: str, timeout: float = 30.0):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        timeout: float = 30.0,
+        max_retries: int = 3,
+        circuit_breaker: CircuitBreaker | None = None,
+    ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model = model
         self.client = httpx.AsyncClient(timeout=timeout)
+        self.max_retries = max_retries
+        self.circuit_breaker = circuit_breaker or CircuitBreaker()
 
     async def stream(self, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
+        self.circuit_breaker.before_call()
+        try:
+            tokens = await retry_async(
+                lambda: self._collect_stream(messages),
+                attempts=self.max_retries,
+                retry_exceptions=(httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError),
+            )
+        except Exception:
+            self.circuit_breaker.record_failure()
+            raise
+        self.circuit_breaker.record_success()
+        for token in tokens:
+            yield token
+
+    async def _collect_stream(self, messages: list[dict[str, Any]]) -> list[str]:
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         payload = {"model": self.model, "messages": messages, "stream": True}
+        tokens: list[str] = []
         async with self.client.stream("POST", f"{self.base_url}/chat/completions", headers=headers, json=payload) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
@@ -34,7 +62,8 @@ class OpenAICompatibleLLMClient:
                 delta = data.get("choices", [{}])[0].get("delta", {})
                 token = delta.get("content")
                 if token:
-                    yield token
+                    tokens.append(token)
+        return tokens
 
 
 class HeuristicLLMClient:

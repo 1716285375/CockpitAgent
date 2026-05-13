@@ -5,6 +5,7 @@ from app.config.settings import get_settings
 from app.context.manager import ContextManager
 from app.context.store import RedisContextStore
 from app.llm.client import HeuristicLLMClient, OpenAICompatibleLLMClient
+from app.llm.retry import CircuitBreaker
 from app.tools import ToolRegistry, build_default_registry
 
 
@@ -37,6 +38,11 @@ def get_llm_client():
             api_key=settings.llm_api_key,
             model=settings.llm_model,
             timeout=settings.llm_timeout,
+            max_retries=settings.llm_max_retries,
+            circuit_breaker=CircuitBreaker(
+                failure_threshold=settings.llm_circuit_failure_threshold,
+                recovery_seconds=settings.llm_circuit_recovery_seconds,
+            ),
         )
     return HeuristicLLMClient()
 

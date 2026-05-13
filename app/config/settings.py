@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "qwen-max"
     llm_timeout: float = 30.0
+    llm_max_retries: int = Field(default=3, ge=1)
+    llm_circuit_failure_threshold: int = Field(default=3, ge=1)
+    llm_circuit_recovery_seconds: float = Field(default=30.0, ge=1.0)
 
     redis_url: str = "memory://"
     mysql_dsn: str = ""
