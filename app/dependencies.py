@@ -3,6 +3,7 @@ from functools import lru_cache
 from app.agent.executor import ReActExecutor
 from app.config.settings import get_settings
 from app.context.manager import ContextManager
+from app.context.session_lock import MemorySessionLock, RedisSessionLock, SessionLock
 from app.context.store import RedisContextStore
 from app.llm.client import HeuristicLLMClient, OpenAICompatibleLLMClient
 from app.llm.retry import CircuitBreaker
@@ -27,6 +28,14 @@ def get_context_manager() -> ContextManager:
         ttl_seconds=settings.context_ttl_seconds,
         store=store,
     )
+
+
+@lru_cache
+def get_session_lock() -> SessionLock:
+    settings = get_settings()
+    if settings.redis_url.startswith("redis://") or settings.redis_url.startswith("rediss://"):
+        return RedisSessionLock(settings.redis_url)
+    return MemorySessionLock()
 
 
 @lru_cache

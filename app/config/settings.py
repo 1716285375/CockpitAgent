@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     context_max_tokens: int = Field(default=3000, ge=200)
     context_keep_recent: int = Field(default=4, ge=1)
     context_ttl_seconds: int = Field(default=86400, ge=60)
+    session_lock_ttl_seconds: int = Field(default=60, ge=1)
 
 
 @lru_cache
