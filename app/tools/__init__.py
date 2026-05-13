@@ -10,8 +10,8 @@ from app.tools.preference.user_preference import GetUserPreferenceTool, Preferen
 from app.tools.qa import VehicleQATool
 
 
-def build_default_registry(timeout_seconds: float = 5.0) -> ToolRegistry:
-    registry = ToolRegistry(timeout_seconds=timeout_seconds)
+def build_default_registry(timeout_seconds: float = 5.0, cache_ttl_seconds: float = 10.0) -> ToolRegistry:
+    registry = ToolRegistry(timeout_seconds=timeout_seconds, cache_ttl_seconds=cache_ttl_seconds)
     preference_store = PreferenceStore()
     registry.register_many(
         [
@@ -31,4 +31,3 @@ def build_default_registry(timeout_seconds: float = 5.0) -> ToolRegistry:
 
 
 __all__ = ["ToolRegistry", "build_default_registry"]
-

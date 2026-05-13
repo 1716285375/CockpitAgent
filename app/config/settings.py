@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     agent_max_steps: int = Field(default=6, ge=1, le=20)
     tool_timeout_seconds: float = Field(default=5.0, ge=0.1)
+    tool_cache_ttl_seconds: float = Field(default=10.0, ge=0.0)
     context_max_tokens: int = Field(default=3000, ge=200)
     context_keep_recent: int = Field(default=4, ge=1)
     context_ttl_seconds: int = Field(default=86400, ge=60)

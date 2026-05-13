@@ -13,7 +13,10 @@ from app.tools import ToolRegistry, build_default_registry
 @lru_cache
 def get_registry() -> ToolRegistry:
     settings = get_settings()
-    return build_default_registry(timeout_seconds=settings.tool_timeout_seconds)
+    return build_default_registry(
+        timeout_seconds=settings.tool_timeout_seconds,
+        cache_ttl_seconds=settings.tool_cache_ttl_seconds,
+    )
 
 
 @lru_cache
