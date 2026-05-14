@@ -22,6 +22,16 @@ def test_request_id_header_is_preserved():
     assert response.headers["X-Request-ID"] == "req-123"
 
 
+def test_metrics_endpoint():
+    client = TestClient(app)
+    client.get("/health")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "http_requests_total" in response.text
+
+
 def test_readiness():
     client = TestClient(app)
 

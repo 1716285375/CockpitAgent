@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 from uuid import uuid4
 
+from app.infra.metrics import MetricsRegistry
 from app.tools.preference.user_preference import parse_mysql_dsn
 
 
@@ -23,11 +24,18 @@ class AuditSink(Protocol):
 
 
 class MemoryAuditSink:
-    def __init__(self):
+    def __init__(self, metrics: MetricsRegistry | None = None):
         self.events: list[AuditEvent] = []
+        self.metrics = metrics
 
     async def record(self, event: AuditEvent) -> None:
         self.events.append(event)
+        if self.metrics is not None:
+            self.metrics.increment(
+                "audit_events_total",
+                event_type=event.event_type,
+                status=event.status,
+            )
 
 
 class MySQLAuditSink:
