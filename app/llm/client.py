@@ -23,11 +23,12 @@ class OpenAICompatibleLLMClient:
         timeout: float = 30.0,
         max_retries: int = 3,
         circuit_breaker: CircuitBreaker | None = None,
+        client: httpx.AsyncClient | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model = model
-        self.client = httpx.AsyncClient(timeout=timeout)
+        self.client = client or httpx.AsyncClient(timeout=timeout)
         self.max_retries = max_retries
         self.circuit_breaker = circuit_breaker or CircuitBreaker()
 
@@ -47,8 +48,8 @@ class OpenAICompatibleLLMClient:
             yield token
 
     async def _collect_stream(self, messages: list[dict[str, Any]]) -> list[str]:
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
-        payload = {"model": self.model, "messages": messages, "stream": True}
+        headers = self._headers()
+        payload = self._payload(messages, stream=True)
         tokens: list[str] = []
         async with self.client.stream("POST", f"{self.base_url}/chat/completions", headers=headers, json=payload) as resp:
             resp.raise_for_status()
@@ -64,6 +65,54 @@ class OpenAICompatibleLLMClient:
                 if token:
                     tokens.append(token)
         return tokens
+
+    async def complete(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        self.circuit_breaker.before_call()
+        try:
+            message = await retry_async(
+                lambda: self._complete_once(messages, tools),
+                attempts=self.max_retries,
+                retry_exceptions=(httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError),
+            )
+        except Exception:
+            self.circuit_breaker.record_failure()
+            raise
+        self.circuit_breaker.record_success()
+        return message
+
+    async def _complete_once(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        response = await self.client.post(
+            f"{self.base_url}/chat/completions",
+            headers=self._headers(),
+            json=self._payload(messages, stream=False, tools=tools),
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("choices", [{}])[0].get("message", {})
+
+    def _headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+
+    def _payload(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        stream: bool,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {"model": self.model, "messages": messages, "stream": stream}
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
+        return payload
 
 
 class HeuristicLLMClient:
