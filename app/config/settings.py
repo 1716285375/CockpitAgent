@@ -50,6 +50,21 @@ class Settings(BaseSettings):
     context_ttl_seconds: int = Field(default=86400, ge=60)
     session_lock_ttl_seconds: int = Field(default=60, ge=1)
 
+    def validate_runtime(self) -> None:
+        if self.app_env.lower() != "production":
+            return
+        missing: list[str] = []
+        if not self.auth_enabled:
+            missing.append("AUTH_ENABLED=true")
+        if not self.jwt_secret:
+            missing.append("JWT_SECRET")
+        if not self.signature_enabled:
+            missing.append("SIGNATURE_ENABLED=true")
+        if not self.hmac_secret:
+            missing.append("HMAC_SECRET")
+        if missing:
+            raise RuntimeError("Production settings are incomplete: " + ", ".join(missing))
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -11,6 +11,7 @@ from app.infra.middleware import RequestContextMiddleware
 def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
+    settings.validate_runtime()
     app = FastAPI(title=settings.app_name, version="0.1.0")
     app.add_middleware(RequestContextMiddleware, metrics=get_metrics_registry())
 
