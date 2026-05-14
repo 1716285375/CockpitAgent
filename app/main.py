@@ -4,12 +4,14 @@ from app.api import admin, chat, session
 from app.config.settings import get_settings
 from app.dependencies import get_registry
 from app.infra.logger import configure_logging
+from app.infra.middleware import RequestContextMiddleware
 
 
 def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
     app = FastAPI(title=settings.app_name, version="0.1.0")
+    app.add_middleware(RequestContextMiddleware)
 
     @app.get("/health")
     async def health() -> dict:
