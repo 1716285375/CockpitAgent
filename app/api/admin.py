@@ -1,9 +1,13 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.auth.jwt_handler import verify_jwt
+from app.agent.executor import ReActExecutor
+from app.config.runtime import apply_runtime_config
 from app.config.settings import Settings, get_settings, safe_settings
-from app.dependencies import get_audit_sink, get_registry
+from app.dependencies import get_audit_sink, get_executor, get_registry
 from app.infra.audit import AuditSink, MemoryAuditSink
 from app.tools.registry import ToolRegistry
 
@@ -13,6 +17,10 @@ router = APIRouter(prefix="/v1/admin", tags=["admin"])
 
 class ToolToggleRequest(BaseModel):
     enabled: bool
+
+
+class RuntimeConfigRequest(BaseModel):
+    config: dict[str, Any]
 
 
 @router.get("/tools")
@@ -47,6 +55,17 @@ async def toggle_tool(
 @router.get("/config")
 async def get_config(_user: dict = Depends(verify_jwt), settings: Settings = Depends(get_settings)) -> dict:
     return {"config": safe_settings(settings)}
+
+
+@router.patch("/config/runtime")
+async def update_runtime_config(
+    req: RuntimeConfigRequest,
+    _user: dict = Depends(verify_jwt),
+    executor: ReActExecutor = Depends(get_executor),
+    registry: ToolRegistry = Depends(get_registry),
+) -> dict:
+    changes = apply_runtime_config(req.config, executor=executor, registry=registry)
+    return {"status": "ok", "changes": changes}
 
 
 @router.get("/audit/events")

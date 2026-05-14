@@ -53,3 +53,19 @@
 `GET /v1/admin/tools/schemas?format=openai`
 
 返回 OpenAI-compatible tool schema；`format=react` 返回 ReAct prompt 使用的简化 schema。
+
+## Runtime Config
+
+`PATCH /v1/admin/config/runtime`
+
+```json
+{
+  "config": {
+    "agent.max_steps": 4,
+    "tools.enabled": ["weather", "ac_control"],
+    "prompt.system_template": "..."
+  }
+}
+```
+
+将配置 payload 应用到当前进程中的 Agent executor 和 tool registry。

@@ -78,6 +78,18 @@ def test_admin_config_hides_secrets():
     assert "config" in response.json()
 
 
+def test_admin_runtime_config_update():
+    client = TestClient(app)
+
+    response = client.patch(
+        "/v1/admin/config/runtime",
+        json={"config": {"agent.max_steps": 3, "tools.enabled": ["weather", "ac_control"]}},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["changes"]["agent.max_steps"] == 3
+
+
 def test_admin_audit_events():
     client = TestClient(app)
 
