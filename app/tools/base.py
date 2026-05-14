@@ -5,7 +5,28 @@ from pydantic import BaseModel
 
 
 class ToolError(RuntimeError):
-    pass
+    code = "tool_error"
+
+    def __init__(self, message: str, code: str | None = None):
+        super().__init__(message)
+        if code is not None:
+            self.code = code
+
+
+class UnknownToolError(ToolError):
+    code = "unknown_tool"
+
+
+class DisabledToolError(ToolError):
+    code = "disabled_tool"
+
+
+class ToolValidationError(ToolError):
+    code = "validation_error"
+
+
+class ToolTimeoutError(ToolError):
+    code = "timeout"
 
 
 class EmptyArgs(BaseModel):

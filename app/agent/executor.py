@@ -65,7 +65,7 @@ class ReActExecutor:
             try:
                 observation = await self.registry.invoke(parsed.action or "", parsed.args or {})
             except ToolError as exc:
-                observation = {"status": "error", "error": str(exc)}
+                observation = {"status": "error", "code": exc.code, "error": str(exc)}
 
             yield Event(type="tool_end", data={"tool": parsed.action, "result": observation})
             history.append({"role": "assistant", "content": buffer})

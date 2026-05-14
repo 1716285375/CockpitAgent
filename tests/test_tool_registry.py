@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from app.tools import build_default_registry
 from app.tools.base import BaseTool
-from app.tools.base import ToolError
+from app.tools.base import DisabledToolError, ToolValidationError, UnknownToolError
 
 
 def test_tool_registry_invokes_ac_control():
@@ -19,8 +19,23 @@ def test_tool_registry_invokes_ac_control():
 def test_tool_registry_validates_args():
     registry = build_default_registry()
 
-    with pytest.raises(ToolError):
+    with pytest.raises(ToolValidationError):
         asyncio.run(registry.invoke("ac_control", {"temperature": 100}))
+
+
+def test_tool_registry_classifies_unknown_tools():
+    registry = build_default_registry()
+
+    with pytest.raises(UnknownToolError):
+        asyncio.run(registry.invoke("missing_tool", {}))
+
+
+def test_tool_registry_classifies_disabled_tools():
+    registry = build_default_registry()
+    registry.set_enabled("weather", False)
+
+    with pytest.raises(DisabledToolError):
+        asyncio.run(registry.invoke("weather", {"city": "上海"}))
 
 
 def test_tool_registry_caches_identical_calls():

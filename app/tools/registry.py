@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.infra.audit import AuditSink, build_audit_event
-from app.tools.base import BaseTool, ToolError
+from app.tools.base import BaseTool, DisabledToolError, ToolError, ToolTimeoutError, ToolValidationError, UnknownToolError
 
 
 class ToolRegistry:
@@ -38,18 +38,18 @@ class ToolRegistry:
         try:
             return self._tools[name]
         except KeyError as exc:
-            raise ToolError(f"Unknown tool: {name}") from exc
+            raise UnknownToolError(f"Unknown tool: {name}") from exc
 
     async def invoke(self, name: str, args: dict[str, Any] | None = None) -> dict[str, Any]:
         started_at = time.perf_counter()
         tool = self.get(name)
         if not tool.enabled:
-            raise ToolError(f"Tool {name} is disabled")
+            raise DisabledToolError(f"Tool {name} is disabled")
 
         try:
             validated = tool.args_schema(**(args or {}))
         except ValidationError as exc:
-            raise ToolError(f"Args validation failed: {exc}") from exc
+            raise ToolValidationError(f"Args validation failed: {exc}") from exc
 
         cache_key = self._cache_key(name, validated.model_dump())
         if tool.cacheable:
@@ -65,7 +65,7 @@ class ToolRegistry:
             )
         except TimeoutError as exc:
             await self._record_audit(name, "timeout", started_at, validated.model_dump())
-            raise ToolError(f"Tool {name} timeout") from exc
+            raise ToolTimeoutError(f"Tool {name} timeout") from exc
         except Exception:
             await self._record_audit(name, "error", started_at, validated.model_dump())
             raise
