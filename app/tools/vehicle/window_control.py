@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.tools.base import BaseTool
+from app.tools.vehicle.bus import MemoryVehicleCommandBus, VehicleCommandBus
 
 
 class WindowArgs(BaseModel):
@@ -16,6 +17,12 @@ class WindowControlTool(BaseTool):
     description = "控制车窗升降、停止或指定开度"
     args_schema = WindowArgs
 
-    async def execute(self, window: str, action: str, percent: int | None = None) -> dict:
-        return {"status": "ok", "window": window, "action": action, "percent": percent}
+    def __init__(self, bus: VehicleCommandBus | None = None):
+        self.bus = bus or MemoryVehicleCommandBus()
 
+    async def execute(self, window: str, action: str, percent: int | None = None) -> dict:
+        result = await self.bus.send(
+            "WINDOW_SET",
+            {"window": window, "action": action, "percent": percent},
+        )
+        return result.as_dict()

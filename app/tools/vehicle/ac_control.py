@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.tools.base import BaseTool
+from app.tools.vehicle.bus import MemoryVehicleCommandBus, VehicleCommandBus
 
 
 class ACArgs(BaseModel):
@@ -16,12 +17,12 @@ class ACControlTool(BaseTool):
     description = "控制车辆空调, 可设定温度、模式和风量"
     args_schema = ACArgs
 
-    async def execute(self, temperature: int, mode: str = "auto", fan_level: int = 2) -> dict:
-        return {
-            "status": "ok",
-            "command": "AC_SET",
-            "current_temp": temperature,
-            "mode": mode,
-            "fan_level": fan_level,
-        }
+    def __init__(self, bus: VehicleCommandBus | None = None):
+        self.bus = bus or MemoryVehicleCommandBus()
 
+    async def execute(self, temperature: int, mode: str = "auto", fan_level: int = 2) -> dict:
+        result = await self.bus.send(
+            "AC_SET",
+            {"current_temp": temperature, "mode": mode, "fan_level": fan_level},
+        )
+        return result.as_dict()
