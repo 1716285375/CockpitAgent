@@ -4,7 +4,7 @@ from app.tools.vehicle.bus import MemoryVehicleCommandBus, VehicleCommandBus
 from app.tools.vehicle.ac_control import ACControlTool
 from app.tools.vehicle.seat_control import SeatControlTool
 from app.tools.vehicle.window_control import WindowControlTool
-from app.tools.info.navigation import NavigationTool
+from app.tools.info.navigation import NavigationProvider, NavigationTool, StaticNavigationProvider
 from app.tools.info.vehicle_status import VehicleStatusTool
 from app.tools.info.weather import StaticWeatherProvider, WeatherProvider, WeatherTool
 from app.tools.media import PlayMusicTool
@@ -19,6 +19,7 @@ def build_default_registry(
     audit_sink: AuditSink | None = None,
     vehicle_bus: VehicleCommandBus | None = None,
     weather_provider: WeatherProvider | None = None,
+    navigation_provider: NavigationProvider | None = None,
 ) -> ToolRegistry:
     registry = ToolRegistry(
         timeout_seconds=timeout_seconds,
@@ -28,6 +29,7 @@ def build_default_registry(
     preference_store = preference_store or MemoryPreferenceStore()
     vehicle_bus = vehicle_bus or MemoryVehicleCommandBus()
     weather_provider = weather_provider or StaticWeatherProvider()
+    navigation_provider = navigation_provider or StaticNavigationProvider()
     registry.register_many(
         [
             ACControlTool(vehicle_bus),
@@ -35,7 +37,7 @@ def build_default_registry(
             WindowControlTool(vehicle_bus),
             VehicleStatusTool(),
             WeatherTool(weather_provider),
-            NavigationTool(),
+            NavigationTool(navigation_provider),
             SetUserPreferenceTool(preference_store),
             GetUserPreferenceTool(preference_store),
             VehicleQATool(),
