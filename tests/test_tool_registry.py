@@ -101,3 +101,13 @@ def test_tool_registry_exports_openai_tool_schemas():
     assert schemas[0]["type"] == "function"
     assert "name" in schemas[0]["function"]
     assert "parameters" in schemas[0]["function"]
+
+
+def test_tool_registry_describes_runtime():
+    registry = build_default_registry(cache_ttl_seconds=7)
+
+    runtime = registry.describe_runtime()
+
+    assert runtime["tools"] >= 1
+    assert runtime["cache_ttl_seconds"] == 7
+    assert "weather" in runtime["enabled_tools"]

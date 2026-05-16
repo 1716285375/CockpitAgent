@@ -86,6 +86,14 @@ class ToolRegistry:
             for tool in self._tools.values()
         ]
 
+    def describe_runtime(self) -> dict[str, Any]:
+        return {
+            "tools": len(self._tools),
+            "enabled_tools": [tool.name for tool in self._tools.values() if tool.enabled],
+            "cache_ttl_seconds": self.cache_ttl_seconds,
+            "timeout_seconds": self.timeout_seconds,
+        }
+
     def set_enabled(self, name: str, enabled: bool) -> None:
         self.get(name).enabled = enabled
         self.clear_cache(tool_name=name)

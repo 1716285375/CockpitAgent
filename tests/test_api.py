@@ -40,6 +40,8 @@ def test_readiness():
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
     assert response.json()["tools"] >= 1
+    assert response.json()["enabled_tools"] >= 1
+    assert "registry" in response.json()
 
 
 def test_create_session():

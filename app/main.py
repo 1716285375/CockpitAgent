@@ -63,8 +63,10 @@ def create_app() -> FastAPI:
             "status": "ready",
             "service": settings.app_name,
             "tools": len(registry.list_tools()),
+            "enabled_tools": len(registry.list_schemas()),
             "context_store": "redis" if settings.redis_url.startswith(("redis://", "rediss://")) else "memory",
             "llm": "remote" if settings.llm_api_key else "local",
+            "registry": registry.describe_runtime(),
         }
 
     @app.get("/metrics", response_class=PlainTextResponse)
